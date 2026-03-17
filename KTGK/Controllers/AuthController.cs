@@ -31,6 +31,7 @@ public class AuthController : Controller
 
         HttpContext.Session.SetString("role", user.Role);
         HttpContext.Session.SetString("username", user.Username);
+        HttpContext.Session.SetInt32("UserId", user.UserId);
 
         if (user.Role == "Teacher")
             return RedirectToAction("Dashboard", "Teacher");

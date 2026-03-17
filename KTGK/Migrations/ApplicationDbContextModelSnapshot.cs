@@ -114,24 +114,25 @@ namespace KTGK.Migrations
                     b.Property<DateTime>("SubmitTime")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("ResultId");
 
                     b.HasIndex("ExamId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Results");
                 });
 
             modelBuilder.Entity("KTGK.Models.ResultDetail", b =>
                 {
-                    b.Property<int>("ResultDetailId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ResultDetailId"));
-
-                    b.Property<string>("CorrectAnswer")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("QuestionId")
                         .HasColumnType("int");
@@ -139,11 +140,14 @@ namespace KTGK.Migrations
                     b.Property<int>("ResultId")
                         .HasColumnType("int");
 
-                    b.Property<string>("SelectedAnswer")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("SelectedAnswerId")
+                        .HasColumnType("int");
 
-                    b.HasKey("ResultDetailId");
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.HasIndex("ResultId");
 
                     b.ToTable("ResultDetails");
                 });
@@ -178,7 +182,7 @@ namespace KTGK.Migrations
                     b.HasOne("KTGK.Models.Question", "Question")
                         .WithMany("Answers")
                         .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Question");
@@ -203,7 +207,34 @@ namespace KTGK.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("KTGK.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Exam");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("KTGK.Models.ResultDetail", b =>
+                {
+                    b.HasOne("KTGK.Models.Question", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("KTGK.Models.Result", "Result")
+                        .WithMany()
+                        .HasForeignKey("ResultId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+
+                    b.Navigation("Result");
                 });
 
             modelBuilder.Entity("KTGK.Models.Exam", b =>

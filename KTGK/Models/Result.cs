@@ -14,10 +14,12 @@ namespace KTGK.Models
 
         public int ExamId { get; set; }
 
-        [ForeignKey("ExamId")]
-        public Exam Exam { get; set; }
+        public int UserId { get; set; } // 🔥 QUAN TRỌNG
 
         public DateTime SubmitTime { get; set; }
+
+        [ForeignKey("ExamId")]
+        public Exam Exam { get; set; }
 
         [ForeignKey("UserId")]
         public User User { get; set; }

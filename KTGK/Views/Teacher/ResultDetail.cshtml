@@ -1,50 +1,26 @@
-﻿@model List<KTGK.Models.ResultDetail>
+﻿@model dynamic
 
-<div class="container mt-4">
+<h2>Xem lại bài làm</h2>
 
-	<h3>Student Exam Detail</h3>
+@foreach (var q in Model)
+{
+    <div class="mb-3">
+        <p><b>@q.Question</b></p>
 
-	<table class="table table-bordered">
-
-		<thead>
-			<tr>
-				<th>Question</th>
-				<th>Student Answer</th>
-				<th>Correct Answer</th>
-				<th>Status</th>
-			</tr>
-		</thead>
-
-		<tbody>
-
-			@foreach (var d in Model)
-			{
-				<tr>
-
-					<td>@d.QuestionId</td>
-
-					<td>@d.SelectedAnswer</td>
-
-					<td>@d.CorrectAnswer</td>
-
-					<td>
-
-						@if (d.SelectedAnswer == d.CorrectAnswer)
-						{
-							<span class="text-success">Correct</span>
-						}
-						else
-						{
-							<span class="text-danger">Wrong</span>
-						}
-
-					</td>
-
-				</tr>
-			}
-
-		</tbody>
-
-	</table>
-
-</div>
+        @foreach (var a in q.Answers)
+        {
+            if (a.AnswerId == q.SelectedAnswerId)
+            {
+                <p style="color: blue;">👉 @a.Content (Bạn chọn)</p>
+            }
+            else if (a.IsCorrect)
+            {
+                <p style="color: green;">✔ @a.Content (Đáp án đúng)</p>
+            }
+            else
+            {
+                <p>@a.Content</p>
+            }
+        }
+    </div>
+}
