@@ -1,77 +1,87 @@
 ﻿using KTGK.Data;
 using KTGK.Models;
-using KTGK.Parsers;
 using Xceed.Words.NET;
 
-namespace KTGK.Services
+public class WordParserService
 {
-    public class WordParserService
+    private readonly ApplicationDbContext _context;
+
+    public WordParserService(ApplicationDbContext context)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ToeicWordParser _parser;
-        private readonly WordValidator _validator;
+        _context = context;
+    }
 
-        public WordParserService(ApplicationDbContext context)
+    public void ImportExam(string filePath, int examId)
+    {
+        using var doc = DocX.Load(filePath);
+
+        var lines = doc.Text.Split('\n');
+
+        Question currentQuestion = null;
+        List<Answer> answers = new List<Answer>();
+
+        foreach (var raw in lines)
         {
-            _context = context;
-            _parser = new ToeicWordParser();
-            _validator = new WordValidator();
-        }
+            var line = raw.Trim();
 
-        public string ImportExam(string filePath)
-        {
-            using var doc = DocX.Load(filePath);
+            if (string.IsNullOrEmpty(line))
+                continue;
 
-            var text = doc.Text;
-
-            var errors = _validator.Validate(text);
-
-            if (errors.Count > 0)
+            // Câu hỏi: bắt đầu bằng số (101, 102...)
+            if (char.IsDigit(line[0]))
             {
-                return string.Join("\n", errors);
-            }
-
-            var questions = _parser.Parse(filePath);
-
-            using var transaction = _context.Database.BeginTransaction();
-
-            try
-            {
-                var exam = new Exam
+                currentQuestion = new Question
                 {
-                    Title = "Imported TOEIC Exam",
-                    Duration = 75,
-                    Description = "Imported from Word"
+                    Content = line,
+                    ExamId = examId,
+                    Answers = new List<Answer>()
                 };
 
-                _context.Exams.Add(exam);
+                _context.Questions.Add(currentQuestion);
                 _context.SaveChanges();
-
-                foreach (var q in questions)
-                {
-                    q.ExamId = exam.ExamId;
-
-                    _context.Questions.Add(q);
-                    _context.SaveChanges();
-
-                    foreach (var a in q.Answers)
-                    {
-                        a.QuestionId = q.QuestionId;
-                        _context.Answers.Add(a);
-                    }
-                }
-
-                _context.SaveChanges();
-
-                transaction.Commit();
-
-                return "Import thành công";
             }
-            catch
+
+            // Đáp án
+            else if (line.StartsWith("A.") ||
+                     line.StartsWith("B.") ||
+                     line.StartsWith("C.") ||
+                     line.StartsWith("D."))
             {
-                transaction.Rollback();
-                return "Import thất bại - rollback database";
+                var answer = new Answer
+                {
+                    Content = line.Substring(2).Trim(),
+                    QuestionId = currentQuestion.QuestionId,
+                    IsCorrect = false
+                };
+
+                _context.Answers.Add(answer);
+                answers.Add(answer);
+            }
+
+            // KEY: A/B/C/D
+            else if (line.StartsWith("KEY"))
+            {
+                var key = line.Split(':')[1].Trim();
+                int index = key[0] - 'A';
+
+                if (index >= 0 && index < answers.Count)
+                {
+                    answers[index].IsCorrect = true;
+                }
             }
         }
+
+        _context.SaveChanges();
+    }
+
+    private void SaveQuestion(string content, int examId)
+    {
+        var question = new Question
+        {
+            Content = content.Trim(),
+            ExamId = examId
+        };
+
+        _context.Questions.Add(question);
     }
 }

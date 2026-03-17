@@ -8,7 +8,7 @@ namespace KTGK.Models
         [Key]
         public int ResultId { get; set; }
 
-        public string UserName { get; set; }
+        public string StudentName { get; set; }
 
         public int Score { get; set; }
 
@@ -16,5 +16,10 @@ namespace KTGK.Models
 
         [ForeignKey("ExamId")]
         public Exam Exam { get; set; }
+
+        public DateTime SubmitTime { get; set; }
+
+        [ForeignKey("UserId")]
+        public User User { get; set; }
     }
 }

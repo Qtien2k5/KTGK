@@ -24,7 +24,7 @@ namespace KTGK.Parsers
                         continue;
 
                     // Question
-                    if (char.IsDigit(line[0]))
+                    if (char.IsDigit(line[0]) || line.StartsWith("Question") || line.StartsWith("Q"))
                     {
                         currentQuestion = new Question
                         {
@@ -33,14 +33,13 @@ namespace KTGK.Parsers
                         };
 
                         questions.Add(currentQuestion);
-                        answers.Clear();
+                        answers = new List<Answer>();
                     }
-
-                    // Answers
-                    else if (line.StartsWith("A.") ||
-                             line.StartsWith("B.") ||
-                             line.StartsWith("C.") ||
-                             line.StartsWith("D."))
+                    else if ((line.StartsWith("A.") ||
+                              line.StartsWith("B.") ||
+                              line.StartsWith("C.") ||
+                              line.StartsWith("D."))
+                              && currentQuestion != null)
                     {
                         var answer = new Answer
                         {
@@ -51,9 +50,7 @@ namespace KTGK.Parsers
                         currentQuestion.Answers.Add(answer);
                         answers.Add(answer);
                     }
-
-                    // KEY
-                    else if (line.StartsWith("KEY"))
+                    else if (line.StartsWith("KEY") && currentQuestion != null)
                     {
                         var key = line.Split(':')[1].Trim();
 

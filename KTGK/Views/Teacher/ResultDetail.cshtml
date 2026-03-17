@@ -1,0 +1,50 @@
+﻿@model List<KTGK.Models.ResultDetail>
+
+<div class="container mt-4">
+
+	<h3>Student Exam Detail</h3>
+
+	<table class="table table-bordered">
+
+		<thead>
+			<tr>
+				<th>Question</th>
+				<th>Student Answer</th>
+				<th>Correct Answer</th>
+				<th>Status</th>
+			</tr>
+		</thead>
+
+		<tbody>
+
+			@foreach (var d in Model)
+			{
+				<tr>
+
+					<td>@d.QuestionId</td>
+
+					<td>@d.SelectedAnswer</td>
+
+					<td>@d.CorrectAnswer</td>
+
+					<td>
+
+						@if (d.SelectedAnswer == d.CorrectAnswer)
+						{
+							<span class="text-success">Correct</span>
+						}
+						else
+						{
+							<span class="text-danger">Wrong</span>
+						}
+
+					</td>
+
+				</tr>
+			}
+
+		</tbody>
+
+	</table>
+
+</div>

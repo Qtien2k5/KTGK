@@ -1,0 +1,46 @@
+﻿<div class="container mt-4">
+
+	<h3>Teacher Dashboard</h3>
+
+	<div class="row mt-4">
+
+		<div class="col-md-4">
+			<div class="card bg-primary text-white p-3">
+				<h5>Total Exams</h5>
+				<h2>@ViewBag.ExamCount</h2>
+			</div>
+		</div>
+
+		<div class="col-md-4">
+			<div class="card bg-success text-white p-3">
+				<h5>Total Students</h5>
+				<h2>@ViewBag.StudentCount</h2>
+			</div>
+		</div>
+
+		<div class="col-md-4">
+			<div class="card bg-warning text-dark p-3">
+				<h5>Total Results</h5>
+				<h2>@ViewBag.ResultCount</h2>
+			</div>
+		</div>
+
+	</div>
+
+	<div class="mt-4">
+
+		<a href="/Upload" class="btn btn-primary">
+			Upload TOEIC Exam
+		</a>
+
+		<a href="/Teacher/Exams" class="btn btn-secondary">
+			View Exams
+		</a>
+
+		<a href="/Teacher/Results" class="btn btn-success">
+			View Student Results
+		</a>
+
+	</div>
+
+</div>

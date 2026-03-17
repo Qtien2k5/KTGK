@@ -1,0 +1,18 @@
+﻿@model dynamic
+
+<h2>@Model.Title</h2>
+
+@foreach (var q in Model.Questions)
+{
+    <div style="margin-bottom:20px;">
+        <p><b>@q.Content</b></p>
+
+        @foreach (var a in q.Answers)
+        {
+            <div>
+                <input type="radio" name="q_@q.QuestionId" />
+                @a.Content
+            </div>
+        }
+    </div>
+}
