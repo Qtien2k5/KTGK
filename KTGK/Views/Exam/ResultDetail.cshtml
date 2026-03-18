@@ -23,6 +23,23 @@
                 </div>
             </div>
 
+            <div class="form-fields">
+                <div class="field-group">
+                    <label>Tên đề thi <span class="optional">(để trống = lấy từ file)</span></label>
+                    <input type="text" name="customTitle" placeholder="VD: TOEIC Reading Test 01 - ETS 2024" />
+                </div>
+                <div class="field-row">
+                    <div class="field-group">
+                        <label>Thời gian làm bài (phút)</label>
+                        <input type="number" name="customDuration" placeholder="75" min="1" max="300" />
+                    </div>
+                    <div class="field-group">
+                        <label>Ghi chú</label>
+                        <input type="text" name="customDescription" placeholder="VD: Đề thi thử tháng 3/2026" />
+                    </div>
+                </div>
+            </div>
+
             <button type="submit" class="btn-upload">
                 🚀 Upload & Tạo Đề Thi
             </button>
@@ -30,13 +47,12 @@
 
         <div class="format-hint">
             <h4>📋 Định dạng file chuẩn:</h4>
-            <code>[EXAM_TITLE] Tên đề thi</code><br />
-            <code>[EXAM_TIME] 75</code><br />
-            <code>[PART: 5]</code><br />
-            <code>[Q:101] [SHUFFLE:TRUE]</code><br />
-            <code>Nội dung câu hỏi</code><br />
-            <code>[A] Đáp án A</code><br />
-            <code>[KEY:B]</code>
+            <code>[EXAM_TITLE] Tên đề thi</code>
+            <code>[EXAM_TIME] 75</code>
+            <code>[PART: 5]</code>
+            <code>[Q:101] [SHUFFLE:TRUE]</code>
+            <code>Nội dung câu hỏi</code>
+            <code>[A] Đáp án A &nbsp; [KEY:B]</code>
         </div>
     </div>
 </div>
@@ -53,7 +69,7 @@
         border-radius: 20px;
         padding: 48px 40px;
         width: 100%;
-        max-width: 560px;
+        max-width: 600px;
         box-shadow: 0 8px 40px rgba(0,0,0,0.10);
         text-align: center;
     }
@@ -120,6 +136,51 @@
         font-weight: 600;
         font-size: 0.9rem;
     }
+
+    .form-fields {
+        text-align: left;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+        .field-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .field-group .optional {
+            font-weight: 400;
+            color: #94a3b8;
+            font-size: 0.78rem;
+        }
+
+        .field-group input {
+            padding: 10px 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+            .field-group input:focus {
+                border-color: #3b82f6;
+            }
 
     .btn-upload {
         width: 100%;

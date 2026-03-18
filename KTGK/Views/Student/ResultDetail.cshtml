@@ -1,14 +1,15 @@
 ﻿@{
     ViewData["Title"] = "Kết quả bài thi";
     var result = ViewBag.Result as KTGK.Models.Result;
-    int correct = (int?)ViewBag.Correct ?? 0;
-    int wrong = (int?)ViewBag.Wrong ?? 0;
-    int skipped = (int?)ViewBag.Skipped ?? 0;
+    int correct = (int?)ViewBag.Correct ?? 0;  
+    int wrong = (int?)ViewBag.Wrong ?? 0;  
+    int skipped = (int?)ViewBag.Skipped ?? 0;  
     int total = (int?)ViewBag.Total ?? 1;
-    int timeTaken = (int?)ViewBag.TimeTaken ?? 0;
+    int timeTaken = ViewBag.TimeTaken ?? 0;
     int minutes = timeTaken / 60;
     int seconds = timeTaken % 60;
-    int toeicScore = total > 0 ? (int)(5 + ((double)correct / total) * 490) : 5;
+    // TOEIC Reading scale: 5~495
+    int toeicScore = (int)(5 + ((double)correct / total) * 490);
 }
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

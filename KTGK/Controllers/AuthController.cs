@@ -39,9 +39,9 @@ public class AuthController : Controller
         return RedirectToAction("Library", "Exam");
 
         if (user.Role == "Student")
-        {
+        
             return RedirectToAction("Dashboard", "Student");
-        }
+        
     }
 
     public IActionResult Logout()

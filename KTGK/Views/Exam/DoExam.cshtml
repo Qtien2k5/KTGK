@@ -1,36 +1,343 @@
-﻿@model dynamic
-
-<h2>@Model.Title</h2>
-
+﻿@model KTGK.Models.Exam
 @{
-    int? currentPassageId = null;
+    ViewData["Title"] = Model.Title;
+    var questions = Model.Questions.OrderBy(q => q.QuestionId).ToList();
+    var totalSeconds = Model.Duration * 60;
+
+    // Xác định Part dựa trên PassageId và vị trí
+    // Part 5: không có passage (câu 101-130)
+    // Part 6: có passage, câu 131-146
+    // Part 7: có passage, câu 147+
+    int part5Count = questions.Count(q => !q.PassageId.HasValue);
+    int part6Count = questions.Count(q => q.PassageId.HasValue) > 0
+        ? Math.Min(16, questions.Count(q => q.PassageId.HasValue))
+        : 0;
 }
 
-@foreach (var q in Model.Questions)
-{
-    <!-- 🔥 HIỂN THỊ PASSAGE (không bị lặp) -->
-    if (q.PassageId != currentPassageId)
-    {
-        currentPassageId = q.PassageId;
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-        if (q.Passage != null)
-        {
-            <div class="border p-3 mb-3 bg-light">
-                <b>Đoạn văn:</b><br />
-                @q.Passage.Content
+<div class="exam-shell">
+    <div class="exam-header">
+        <div class="exam-header-left">
+            <div class="exam-title">@Model.Title</div>
+            <div class="exam-part-label" id="currentPartLabel">Part 5</div>
+        </div>
+        <div class="exam-header-right">
+            <div class="timer-box">
+                <span>⏱</span>
+                <span id="timerDisplay">@($"{Model.Duration:D2}:00")</span>
             </div>
-        }
+        </div>
+    </div>
+
+    <div class="exam-body">
+        <div class="question-panel" id="questionPanel"></div>
+
+        <div class="answer-sheet">
+            <div class="sheet-header">
+                <span>📋 Phiếu trả lời</span>
+                <span><span id="answeredCount">0</span>/@questions.Count</span>
+            </div>
+            <div class="sheet-grid" id="sheetGrid">
+                @for (int i = 0; i < questions.Count; i++)
+                {
+                    <button class="sheet-btn" id="sheetBtn_@questions[i].QuestionId"
+                            onclick="jumpTo(@i)">@(101 + i)</button>
+                }
+            </div>
+            <button class="btn-submit" onclick="confirmSubmit()">🏁 Nộp bài thi</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="submitModal">
+    <div class="modal-box">
+        <div class="modal-icon">🏁</div>
+        <h3>Xác nhận nộp bài?</h3>
+        <p id="modalSummary"></p>
+        <div class="modal-actions">
+            <button onclick="closeModal()" class="btn-cancel">Làm tiếp</button>
+            <button onclick="doSubmit()" class="btn-confirm">Nộp bài</button>
+        </div>
+    </div>
+</div>
+
+<form id="submitForm" method="post" action="/Exam/Submit">
+    <input type="hidden" name="examId" value="@Model.ExamId" />
+    <input type="hidden" name="timeTaken" id="timeTakenInput" value="0" />
+</form>
+
+@section Scripts {
+<script>
+const questions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+    questions.Select((q, i) => new {
+        q.QuestionId,
+        q.Content,
+        PassageContent = q.Passage != null ? q.Passage.Content : (string)null,
+        Answers = (q.Answers ?? new List<KTGK.Models.Answer>())
+            .Select(a => new { a.AnswerId, a.Content }).ToList(),
+        Index = i,
+        HasPassage = q.PassageId.HasValue
+    })
+));
+
+const part5Count = @part5Count;
+const totalSeconds = @totalSeconds;
+let timeLeft = totalSeconds;
+let currentIndex = 0;
+const selectedAnswers = {};
+
+// Xác định part label
+function getPartLabel(index, hasPassage) {
+    if (!hasPassage) return 'Part 5: Incomplete Sentences';
+    if (index < part5Count + 16) return 'Part 6: Text Completion';
+    return 'Part 7: Reading Comprehension';
+}
+
+// TIMER
+const timerDisplay = document.getElementById('timerDisplay');
+const timerInterval = setInterval(() => {
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+    const s = (timeLeft % 60).toString().padStart(2, '0');
+    timerDisplay.textContent = m + ':' + s;
+    if (timeLeft <= 300) timerDisplay.style.color = '#ef4444';
+    if (timeLeft <= 0) { clearInterval(timerInterval); doSubmit(); }
+}, 1000);
+
+// RENDER CÂU HỎI
+function renderQuestion(index) {
+    currentIndex = index;
+    const q = questions[index];
+    const panel = document.getElementById('questionPanel');
+
+    // Cập nhật part label
+    document.getElementById('currentPartLabel').textContent = getPartLabel(index, q.HasPassage);
+
+    // Highlight sheet
+    document.querySelectorAll('.sheet-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('sheetBtn_' + q.QuestionId)?.classList.add('active');
+
+    let html = '';
+
+    // Passage cho Part 6 & 7
+    if (q.HasPassage && q.PassageContent) {
+        html += `
+        <div class="passage-box">
+            <div class="passage-label">📄 Đoạn văn</div>
+            <div class="passage-content">${q.PassageContent.replace(/\n/g, '<br/>')}</div>
+        </div>`;
     }
 
-    <div style="margin-bottom:20px;">
-        <p><b>@q.Content</b></p>
+    html += `
+    <div class="question-card">
+        <div class="question-number">CÂU ${101 + index}</div>
+        <div class="question-content">${q.Content || '-------'}</div>
+        <div class="answer-options">`;
 
-        @foreach (var a in q.Answers)
-        {
-            <div>
-                <input type="radio" name="q_@q.QuestionId" />
-                @a.Content
-            </div>
-        }
-    </div>
+    const labels = ['A', 'B', 'C', 'D'];
+    if (q.Answers && q.Answers.length > 0) {
+        q.Answers.forEach((ans, i) => {
+            const selected = selectedAnswers[q.QuestionId] === ans.AnswerId;
+            html += `
+            <div class="option ${selected ? 'selected' : ''}"
+                 onclick="selectAnswer(${q.QuestionId}, ${ans.AnswerId}, this)">
+                <span class="option-label">${labels[i]}</span>
+                <span class="option-text">${ans.Content}</span>
+            </div>`;
+        });
+    } else {
+        html += `<p style="color:#94a3b8">Không có đáp án</p>`;
+    }
+
+    html += `</div></div>`;
+
+    // Navigation
+    html += `<div class="nav-btns">`;
+    if (index > 0)
+        html += `<button class="btn-nav btn-prev" onclick="renderQuestion(${index - 1})">← Câu trước</button>`;
+    else
+        html += `<span></span>`;
+    if (index < questions.length - 1)
+        html += `<button class="btn-nav btn-next" onclick="renderQuestion(${index + 1})">Câu tiếp →</button>`;
+    html += `</div>`;
+
+    panel.innerHTML = html;
+    panel.scrollTop = 0;
 }
+
+function selectAnswer(questionId, answerId, el) {
+    selectedAnswers[questionId] = answerId;
+    el.closest('.answer-options').querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    const btn = document.getElementById('sheetBtn_' + questionId);
+    if (btn) btn.classList.add('answered');
+    document.getElementById('answeredCount').textContent = Object.keys(selectedAnswers).length;
+}
+
+function jumpTo(index) { renderQuestion(index); }
+
+function confirmSubmit() {
+    const answered = Object.keys(selectedAnswers).length;
+    const total = questions.length;
+    document.getElementById('modalSummary').textContent =
+        `Đã trả lời ${answered}/${total} câu. ${total - answered} câu chưa làm.`;
+    document.getElementById('submitModal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('submitModal').style.display = 'none'; }
+
+function doSubmit() {
+    clearInterval(timerInterval);
+    document.getElementById('timeTakenInput').value = totalSeconds - timeLeft;
+    const form = document.getElementById('submitForm');
+    Object.entries(selectedAnswers).forEach(([qId, aId]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = `answers[${qId}]`;
+        input.value = aId;
+        form.appendChild(input);
+    });
+    form.submit();
+}
+
+renderQuestion(0);
+</script>
+}
+
+<style>
+* { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+.exam-shell { display: flex; flex-direction: column; height: 100vh; background: #f1f5f9; overflow: hidden; }
+
+.exam-header {
+    display: flex; justify-content: space-between; align-items: center;
+    background: linear-gradient(135deg, #1e40af, #4f46e5);
+    padding: 14px 28px; color: white; flex-shrink: 0;
+}
+.exam-title { font-size: 1.1rem; font-weight: 700; }
+.exam-part-label { font-size: 0.8rem; opacity: 0.75; margin-top: 3px; }
+.timer-box {
+    background: rgba(255,255,255,0.15); border-radius: 12px;
+    padding: 8px 18px; font-size: 1.5rem; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+}
+
+.exam-body { display: flex; flex: 1; overflow: hidden; }
+
+/* LEFT */
+.question-panel {
+    flex: 1; overflow-y: auto; padding: 24px 28px;
+    display: flex; flex-direction: column; gap: 16px;
+}
+
+/* PASSAGE */
+.passage-box {
+    background: #fff; border-left: 4px solid #6366f1;
+    border-radius: 14px; padding: 20px 24px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    max-height: 45vh; overflow-y: auto;
+}
+.passage-label {
+    font-size: 0.75rem; font-weight: 700; color: #6366f1;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+}
+.passage-content { font-size: 0.92rem; line-height: 1.85; color: #374151; }
+
+/* QUESTION CARD */
+.question-card {
+    background: white; border-radius: 16px;
+    padding: 24px 28px; box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
+.question-number {
+    font-size: 0.75rem; font-weight: 700; color: #6366f1;
+    text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+}
+.question-content {
+    font-size: 1rem; font-weight: 500;
+    color: #1e293b; line-height: 1.7; margin-bottom: 20px;
+}
+.answer-options { display: flex; flex-direction: column; gap: 10px; }
+.option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 18px; border-radius: 12px;
+    border: 2px solid #e2e8f0; cursor: pointer;
+    transition: all 0.15s; background: #f8fafc;
+}
+.option:hover { border-color: #a5b4fc; background: #eef2ff; }
+.option.selected { border-color: #6366f1; background: #eef2ff; }
+.option-label {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #e2e8f0; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 0.85rem;
+    color: #475569; flex-shrink: 0;
+}
+.option.selected .option-label { background: #6366f1; color: white; }
+.option-text { font-size: 0.95rem; color: #374151; }
+
+/* NAV */
+.nav-btns {
+    display: flex; gap: 12px;
+    justify-content: space-between; margin-top: 4px;
+}
+.btn-nav {
+    padding: 10px 24px; border-radius: 10px; border: none;
+    font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: all 0.15s;
+}
+.btn-prev { background: #f1f5f9; color: #475569; }
+.btn-prev:hover { background: #e2e8f0; }
+.btn-next { background: #6366f1; color: white; }
+.btn-next:hover { background: #4f46e5; }
+
+/* RIGHT: ANSWER SHEET */
+.answer-sheet {
+    width: 230px; background: white;
+    border-left: 1px solid #e2e8f0; padding: 20px 14px;
+    display: flex; flex-direction: column; gap: 12px; overflow-y: auto;
+}
+.sheet-header {
+    font-size: 0.85rem; font-weight: 600; color: #64748b;
+    display: flex; justify-content: space-between;
+}
+.sheet-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.sheet-btn {
+    aspect-ratio: 1; border-radius: 8px;
+    border: 2px solid #e2e8f0; background: #f8fafc;
+    font-size: 0.7rem; font-weight: 600; color: #94a3b8;
+    cursor: pointer; transition: all 0.15s;
+}
+.sheet-btn:hover { border-color: #6366f1; color: #6366f1; }
+.sheet-btn.active { border-color: #6366f1; background: #eef2ff; color: #6366f1; }
+.sheet-btn.answered { background: #6366f1; color: white; border-color: #6366f1; }
+.btn-submit {
+    margin-top: auto; background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white; border: none; border-radius: 12px;
+    padding: 13px; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+}
+.btn-submit:hover { opacity: 0.88; }
+
+/* MODAL */
+.modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 999;
+    align-items: center; justify-content: center;
+}
+.modal-box {
+    background: white; border-radius: 20px; padding: 40px 36px;
+    text-align: center; max-width: 360px; width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.modal-icon { font-size: 48px; margin-bottom: 12px; }
+.modal-box h3 { font-size: 1.3rem; font-weight: 700; color: #1e293b; margin-bottom: 10px; }
+.modal-box p { color: #64748b; margin-bottom: 24px; }
+.modal-actions { display: flex; gap: 12px; justify-content: center; }
+.btn-cancel {
+    padding: 10px 24px; border-radius: 10px;
+    border: 2px solid #e2e8f0; background: white;
+    font-weight: 600; cursor: pointer; color: #475569;
+}
+.btn-confirm {
+    padding: 10px 24px; border-radius: 10px;
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white; border: none; font-weight: 700; cursor: pointer;
+}
+</style>

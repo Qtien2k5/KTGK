@@ -1,0 +1,45 @@
+﻿@model List<KTGK.Models.Result>
+
+<div class="container mt-4">
+
+	<h3>Student Results</h3>
+
+	<table class="table table-bordered">
+
+		<thead>
+			<tr>
+				<th>Student</th>
+				<th>Exam</th>
+				<th>Score</th>
+				<th>Date</th>
+				<th>Actions</th>
+			</tr>
+		</thead>
+
+		<tbody>
+
+			@foreach (var r in Model)
+			{
+				<tr>
+					<td>@r.StudentName</td>
+					<td>@r.ExamId</td>
+					<td>@r.Score</td>
+					<td>@r.SubmitTime</td>
+					<td>
+						<a asp-controller="Teacher"
+						   asp-action="ResultDetail"
+						   asp-route-id="@r.ResultId"
+						   class="btn btn-info btn-sm">
+							Xem lại
+						</a>
+					</td>
+				</tr>
+			}
+
+		</tbody>
+
+
+
+	</table>
+
+</div>

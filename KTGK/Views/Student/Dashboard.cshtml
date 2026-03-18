@@ -19,16 +19,13 @@
 				{
 					<tr>
 						<td>@exam.Title</td>
-
 						<td>
-							<a href="/Student/Result/@exam.ExamId"
+							<span>ResultId: @exam.ResultId | ExamId: @exam.ExamId</span>
+							<a href="/Student/ResultDetail/@exam.ResultId"
 							   class="btn btn-sm btn-success">
-
 								Xem điểm
-
 							</a>
 						</td>
-
 					</tr>
 				}
 
