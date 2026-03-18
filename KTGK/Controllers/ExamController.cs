@@ -1,6 +1,7 @@
 ﻿using KTGK.Data;
 using KTGK.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
 namespace KTGK.Controllers
@@ -69,24 +70,30 @@ namespace KTGK.Controllers
         public IActionResult DoExam(int id)
         {
             var exam = _context.Exams
-                .Where(e => e.ExamId == id)
-                .Select(e => new
-                {
-                    e.ExamId,
-                    e.Title,
-                    Questions = e.Questions.Select(q => new
-                    {
-                        q.QuestionId,
-                        q.Content,
-                        Answers = q.Answers.ToList()
-                    }).ToList()
-                })
-                .FirstOrDefault();
+                .Include(e => e.Questions)
+                    .ThenInclude(q => q.Answers)
+                .Include(e => e.Questions)
+                    .ThenInclude(q => q.Passage) // 🔥 bắt buộc
+                .FirstOrDefault(e => e.ExamId == id);
 
             if (exam == null)
                 return Content("Không tìm thấy đề");
 
-            return View(exam);
+            var model = new
+            {
+                exam.ExamId,
+                exam.Title,
+                Questions = exam.Questions.Select(q => new
+                {
+                    q.QuestionId,
+                    q.Content,
+                    q.PassageId,
+                    q.Passage,
+                    Answers = q.Answers
+                }).ToList()
+            };
+
+            return View(model);
         }
 
         public IActionResult Edit(int id)

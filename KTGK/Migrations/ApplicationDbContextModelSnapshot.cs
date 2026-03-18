@@ -86,9 +86,14 @@ namespace KTGK.Migrations
                     b.Property<int>("ExamId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("PassageId")
+                        .HasColumnType("int");
+
                     b.HasKey("QuestionId");
 
                     b.HasIndex("ExamId");
+
+                    b.HasIndex("PassageId");
 
                     b.ToTable("Questions");
                 });
@@ -177,6 +182,23 @@ namespace KTGK.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Passage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Passages");
+                });
+
             modelBuilder.Entity("KTGK.Models.Answer", b =>
                 {
                     b.HasOne("KTGK.Models.Question", "Question")
@@ -196,7 +218,13 @@ namespace KTGK.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Passage", "Passage")
+                        .WithMany()
+                        .HasForeignKey("PassageId");
+
                     b.Navigation("Exam");
+
+                    b.Navigation("Passage");
                 });
 
             modelBuilder.Entity("KTGK.Models.Result", b =>

@@ -16,6 +16,10 @@ namespace KTGK.Models
         [ForeignKey("ExamId")]
         public Exam Exam { get; set; }
 
-        public ICollection<Answer> Answers { get; set; }
+        public List<Answer> Answers { get; set; }
+
+        public int? PassageId { get; set; }   // 🔥 KEY
+
+        public Passage Passage { get; set; }
     }
 }

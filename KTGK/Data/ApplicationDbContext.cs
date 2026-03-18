@@ -23,6 +23,8 @@ namespace KTGK.Data
 
         public DbSet<ResultDetail> ResultDetails { get; set; }
 
+        public DbSet<Passage> Passages { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

@@ -1,87 +1,102 @@
 ﻿using KTGK.Data;
 using KTGK.Models;
+using System.IO.Packaging;
+using System.Text.RegularExpressions;
 using Xceed.Words.NET;
 
-public class WordParserService
+namespace KTGK.Services
 {
-    private readonly ApplicationDbContext _context;
-
-    public WordParserService(ApplicationDbContext context)
+    public class WordParserService
     {
-        _context = context;
-    }
+        private readonly ApplicationDbContext _context;
 
-    public void ImportExam(string filePath, int examId)
-    {
-        using var doc = DocX.Load(filePath);
-
-        var lines = doc.Text.Split('\n');
-
-        Question currentQuestion = null;
-        List<Answer> answers = new List<Answer>();
-
-        foreach (var raw in lines)
+        public WordParserService(ApplicationDbContext context)
         {
-            var line = raw.Trim();
-
-            if (string.IsNullOrEmpty(line))
-                continue;
-
-            // Câu hỏi: bắt đầu bằng số (101, 102...)
-            if (char.IsDigit(line[0]))
-            {
-                currentQuestion = new Question
-                {
-                    Content = line,
-                    ExamId = examId,
-                    Answers = new List<Answer>()
-                };
-
-                _context.Questions.Add(currentQuestion);
-                _context.SaveChanges();
-            }
-
-            // Đáp án
-            else if (line.StartsWith("A.") ||
-                     line.StartsWith("B.") ||
-                     line.StartsWith("C.") ||
-                     line.StartsWith("D."))
-            {
-                var answer = new Answer
-                {
-                    Content = line.Substring(2).Trim(),
-                    QuestionId = currentQuestion.QuestionId,
-                    IsCorrect = false
-                };
-
-                _context.Answers.Add(answer);
-                answers.Add(answer);
-            }
-
-            // KEY: A/B/C/D
-            else if (line.StartsWith("KEY"))
-            {
-                var key = line.Split(':')[1].Trim();
-                int index = key[0] - 'A';
-
-                if (index >= 0 && index < answers.Count)
-                {
-                    answers[index].IsCorrect = true;
-                }
-            }
+            _context = context;
         }
 
-        _context.SaveChanges();
-    }
-
-    private void SaveQuestion(string content, int examId)
-    {
-        var question = new Question
+        public void ImportExam(string filePath, int examId)
         {
-            Content = content.Trim(),
-            ExamId = examId
-        };
+            using var doc = DocX.Load(filePath);
+            var lines = doc.Paragraphs
+                .Select(p => p.Text.Trim())
+                .Where(p => !string.IsNullOrEmpty(p))
+                .ToList();
 
-        _context.Questions.Add(question);
+            Question currentQuestion = null;
+            List<Answer> answers = new List<Answer>();
+
+            foreach (var raw in lines)
+            {
+                var line = raw.Trim();
+
+                if (string.IsNullOrEmpty(line))
+                    continue;
+
+                Console.WriteLine("LINE: " + line); // 🔥 debug
+
+                // 🔹 Bỏ Directions
+                if (line.StartsWith("Directions"))
+                    continue;
+
+                // 🔥 GẶP CÂU HỎI
+                if (line.Contains("[Q:"))
+                {
+                    // lưu câu cũ
+                    if (currentQuestion != null)
+                    {
+                        currentQuestion.Answers = answers;
+
+                        if (answers.Count > 0)
+                            answers[0].IsCorrect = true;
+
+                        _context.Questions.Add(currentQuestion);
+                    }
+
+                    currentQuestion = new Question
+                    {
+                        Content = "", // sẽ gán ở dưới
+                        ExamId = examId
+                    };
+
+                    answers = new List<Answer>();
+                    continue;
+                }
+
+                // 🔹 Đáp án
+                if (line.StartsWith("[A]") || line.StartsWith("[B]") ||
+                    line.StartsWith("[C]") || line.StartsWith("[D]"))
+                {
+                    var content = line.Substring(3).Trim();
+
+                    answers.Add(new Answer
+                    {
+                        Content = content,
+                        IsCorrect = false
+                    });
+
+                    continue;
+                }
+
+                // 🔥 NỘI DUNG CÂU HỎI (QUAN TRỌNG NHẤT)
+                if (currentQuestion != null && answers.Count == 0)
+                {
+                    currentQuestion.Content += line + " ";
+                }
+            }
+
+            // 🔥 LƯU CÂU CUỐI
+            if (currentQuestion != null)
+            {
+                currentQuestion.Answers = answers;
+
+                if (answers.Count > 0)
+                    answers[0].IsCorrect = true;
+
+                _context.Questions.Add(currentQuestion);
+            }
+
+            _context.SaveChanges();
+        }
     }
 }

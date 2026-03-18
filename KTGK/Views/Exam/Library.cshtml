@@ -104,23 +104,24 @@
                             Bắt đầu làm bài
                         </a>
 
-                        <!-- Chỉ Teacher mới thấy -->
                         @if (Context.Session.GetString("role") == "Teacher")
                         {
-                            <a asp-controller="Exam"
-                               asp-action="Edit"
-                               asp-route-id="@exam.ExamId"
-                               class="btn btn-warning">
-                                Sửa
-                            </a>
+                            <div class="d-flex gap-2">
+                                <a asp-controller="Exam"
+                                   asp-action="Edit"
+                                   asp-route-id="@exam.ExamId"
+                                   class="btn btn-warning w-50">
+                                    Sửa
+                                </a>
 
-                            <a asp-controller="Exam"
-                               asp-action="Delete"
-                               asp-route-id="@exam.ExamId"
-                               class="btn btn-danger w-100"
-                               onclick="return confirm('Xóa đề này?')">
-                                Xóa
-                            </a>
+                                <a asp-controller="Exam"
+                                   asp-action="Delete"
+                                   asp-route-id="@exam.ExamId"
+                                   class="btn btn-danger w-50"
+                                   onclick="return confirm('Xóa đề này?')">
+                                    Xóa
+                                </a>
+                            </div>
                         }
 
                     </div>

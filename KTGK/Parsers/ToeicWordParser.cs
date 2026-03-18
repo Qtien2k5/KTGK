@@ -1,5 +1,6 @@
 ﻿using Xceed.Words.NET;
 using KTGK.Models;
+using System.Text.RegularExpressions;
 
 namespace KTGK.Parsers
 {
@@ -14,7 +15,6 @@ namespace KTGK.Parsers
                 var lines = doc.Text.Split('\n');
 
                 Question currentQuestion = null;
-                List<Answer> answers = new List<Answer>();
 
                 foreach (var raw in lines)
                 {
@@ -23,45 +23,61 @@ namespace KTGK.Parsers
                     if (string.IsNullOrEmpty(line))
                         continue;
 
-                    // Question
-                    if (char.IsDigit(line[0]) || line.StartsWith("Question") || line.StartsWith("Q"))
+                    // 🔹 [Q:101]
+                    if (Regex.IsMatch(line, @"^\[Q:\d+\]"))
                     {
+                        if (currentQuestion != null)
+                            questions.Add(currentQuestion);
+
                         currentQuestion = new Question
                         {
-                            Content = line,
+                            Content = "",
                             Answers = new List<Answer>()
                         };
-
-                        questions.Add(currentQuestion);
-                        answers = new List<Answer>();
                     }
-                    else if ((line.StartsWith("A.") ||
-                              line.StartsWith("B.") ||
-                              line.StartsWith("C.") ||
-                              line.StartsWith("D."))
-                              && currentQuestion != null)
+
+                    // 🔹 [A] [B] [C] [D]
+                    else if (Regex.IsMatch(line, @"^\[[A-D]\]"))
                     {
-                        var answer = new Answer
+                        if (currentQuestion == null) continue;
+
+                        var content = line.Substring(3).Trim();
+
+                        currentQuestion.Answers.Add(new Answer
                         {
-                            Content = line.Substring(2).Trim(),
+                            Content = content,
                             IsCorrect = false
-                        };
-
-                        currentQuestion.Answers.Add(answer);
-                        answers.Add(answer);
+                        });
                     }
-                    else if (line.StartsWith("KEY") && currentQuestion != null)
+
+                    // 🔹 [KEY:B]
+                    else if (Regex.IsMatch(line, @"^\[KEY:[A-D]\]"))
                     {
-                        var key = line.Split(':')[1].Trim();
+                        if (currentQuestion == null) continue;
+
+                        var key = line.Replace("[KEY:", "").Replace("]", "").Trim();
 
                         int index = key[0] - 'A';
 
-                        if (index >= 0 && index < answers.Count)
+                        if (index >= 0 && index < currentQuestion.Answers.Count)
                         {
-                            answers[index].IsCorrect = true;
+                            currentQuestion.Answers[index].IsCorrect = true;
+                        }
+                    }
+
+                    // 🔹 Nội dung câu hỏi
+                    else
+                    {
+                        if (currentQuestion != null && currentQuestion.Answers.Count == 0)
+                        {
+                            currentQuestion.Content += line + " ";
                         }
                     }
                 }
+
+                // add câu cuối
+                if (currentQuestion != null)
+                    questions.Add(currentQuestion);
             }
 
             return questions;

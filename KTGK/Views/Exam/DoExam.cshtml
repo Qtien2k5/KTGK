@@ -2,8 +2,26 @@
 
 <h2>@Model.Title</h2>
 
+@{
+    int? currentPassageId = null;
+}
+
 @foreach (var q in Model.Questions)
 {
+    <!-- 🔥 HIỂN THỊ PASSAGE (không bị lặp) -->
+    if (q.PassageId != currentPassageId)
+    {
+        currentPassageId = q.PassageId;
+
+        if (q.Passage != null)
+        {
+            <div class="border p-3 mb-3 bg-light">
+                <b>Đoạn văn:</b><br />
+                @q.Passage.Content
+            </div>
+        }
+    }
+
     <div style="margin-bottom:20px;">
         <p><b>@q.Content</b></p>
 
